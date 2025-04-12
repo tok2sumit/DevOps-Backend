@@ -5,14 +5,15 @@ pipeline {
         GIT_REPO = 'https://github.com/tok2sumit/DevOps-Backend.git'
         BRANCH = 'UAT'
         DEPLOY_DIR = '/home/ubuntu/CharityConnectBackend'
-        JAR_NAME = 'CharityConnectBackend.jar'
+        JAR_NAME = 'CharityConnect-0.0.1-SNAPSHOT.jar'
         LOG_FILE = "${DEPLOY_DIR}/app.log"
+        GITHUB_CREDENTIALS_ID = 'Frontend-CharityConnect'
     }
 
     stages {
         stage('Clone Repo') {
             steps {
-                git branch: "${BRANCH}", url: "${GIT_REPO}"
+                git credentialsId: "${GITHUB_CREDENTIALS_ID}", branch: "${BRANCH}", url: "${GIT_REPO}"
             }
         }
 
@@ -24,20 +25,21 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
+                sh """
                 echo "Stopping old app if running..."
-                PID=$(pgrep -f $JAR_NAME || true)
-                if [ ! -z "$PID" ]; then
-                  kill -9 $PID
-                  echo "Killed old app with PID $PID"
+                PID=\$(pgrep -f ${JAR_NAME} || true)
+                if [ ! -z "\$PID" ]; then
+                  kill -9 \$PID
+                  echo "Killed old app with PID \$PID"
                 fi
 
                 echo "Deploying new JAR..."
-                cp target/*.jar $DEPLOY_DIR/$JAR_NAME
+                rm -f ${DEPLOY_DIR}/${JAR_NAME}
+                cp target/*.jar ${DEPLOY_DIR}/${JAR_NAME}
 
                 echo "Starting app..."
-                nohup java -jar $DEPLOY_DIR/$JAR_NAME > $LOG_FILE 2>&1 &
-                '''
+                nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
+                """
             }
         }
     }
