@@ -30,7 +30,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
-                    echo '🚀 Starting deployment...'
+                    echo '🚀 Starting deployment.....'
                     sh """
                         echo "🔎 Checking for running instance..."
                         PID=\$(pgrep -f ${JAR_NAME} || true)
