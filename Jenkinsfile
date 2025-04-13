@@ -13,33 +13,44 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
+                echo '🔄 Cloning GitHub repository...'
                 git credentialsId: "${GITHUB_CREDENTIALS_ID}", branch: "${BRANCH}", url: "${GIT_REPO}"
+                echo '✅ Repository cloned.'
             }
         }
 
         stage('Build App') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                echo '🔨 Building Spring Boot application...'
+                sh 'mvn clean package -DskipTests --batch-mode'
+                echo '✅ Build complete.'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh """
-                echo "Stopping old app if running..."
-                PID=\$(pgrep -f ${JAR_NAME} || true)
-                if [ ! -z "\$PID" ]; then
-                  kill -9 \$PID
-                  echo "Killed old app with PID \$PID"
-                fi
+                timeout(time: 2, unit: 'MINUTES') {
+                    echo '🚀 Starting deployment...'
+                    sh """
+                        echo "🔎 Checking for running instance..."
+                        PID=\$(pgrep -f ${JAR_NAME} || true)
+                        if [ ! -z "\$PID" ]; then
+                            echo "🛑 Stopping existing app (PID: \$PID)"
+                            kill -9 \$PID
+                        fi
 
-                echo "Deploying new JAR..."
-                rm -f ${DEPLOY_DIR}/${JAR_NAME}
-                cp target/*.jar ${DEPLOY_DIR}/${JAR_NAME}
+                        echo "🧹 Cleaning old JAR..."
+                        rm -f ${DEPLOY_DIR}/${JAR_NAME}
 
-                echo "Starting app..."
-                nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
-                """
+                        echo "📦 Copying new JAR to deployment directory..."
+                        cp target/*.jar ${DEPLOY_DIR}/${JAR_NAME}
+
+                        echo "▶️ Starting new app..."
+                        nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
+
+                        echo "✅ App started successfully in background."
+                    """
+                }
             }
         }
     }
