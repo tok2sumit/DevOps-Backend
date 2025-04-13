@@ -44,7 +44,7 @@ public class AuthController {
 
     @GetMapping("/test")
     public ResponseEntity<String> test(){
-        System.out.println("Server is live");
+        System.out.println("Server is Running live");
         return ResponseEntity.ok("Server is Live");
     }
 }
