@@ -55,7 +55,7 @@ pipeline {
                         echo "▶️ Starting new app..."
                         nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
 
-                        echo "✅ App started successfully in background."
+                        echo "✅ App started successfully in background.."
                     """
                 }
             }
