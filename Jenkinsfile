@@ -2,42 +2,35 @@ pipeline {
     agent any
 
     environment {
-        GIT_REPO = 'https://github.com/tok2sumit/DevOps-Backend.git'
-        BRANCH = 'UAT'
         DEPLOY_DIR = '/home/ubuntu/CharityConnectBackend'
         JAR_NAME = 'CharityConnect-0.0.1-SNAPSHOT.jar'
         LOG_FILE = "${DEPLOY_DIR}/app.log"
-        GITHUB_CREDENTIALS_ID = 'Frontend-CharityConnect'
+        DOWNLOAD_URL = 'https://github.com/tok2sumit/DevOps-Backend/releases/download/latest/CharityConnect-0.0.1-SNAPSHOT.jar'
+        // if using a private repo with GitHub Token
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
     }
 
     stages {
-        stage('Clone Repo') {
+        stage('Download JAR from GitHub Release') {
             steps {
-                echo '🔄 Cloning GitHub repository...'
-                git credentialsId: "${GITHUB_CREDENTIALS_ID}", branch: "${BRANCH}", url: "${GIT_REPO}"
-                echo '✅ Repository cloned.'
-            }
-        }
+                echo '⬇️ Downloading JAR from GitHub Releases...'
 
-        stage('Build App') {
-            steps {
-                timeout(time: 15, unit: 'MINUTES') {
-                    echo '🔨 Building Spring Boot application...'
-                    sh '''
-                        while true; do echo "[INFO] Still building..."; sleep 60; done &
-                        MVN_PID=$!
-                        mvn -B -V -U clean package -DskipTests
-                        kill $MVN_PID
-                    '''
-                    echo '✅ Build complete.'
-                }
+                sh """
+                    echo "🧹 Cleaning old JAR..."
+                    rm -f ${DEPLOY_DIR}/${JAR_NAME}
+
+                    echo "📥 Downloading new JAR from GitHub..."
+                    curl -L -o ${DEPLOY_DIR}/${JAR_NAME} "${DOWNLOAD_URL}"
+                    # If using a private repo, use:
+                    # curl -L -H "Authorization: token ${GITHUB_TOKEN}" -o ${DEPLOY_DIR}/${JAR_NAME} "${DOWNLOAD_URL}"
+                """
             }
         }
 
         stage('Deploy') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
-                    echo '🚀 Starting deployment.....'
+                    echo '🚀 Starting deployment...'
                     sh """
                         echo "🔎 Checking for running instance..."
                         PID=\$(pgrep -f ${JAR_NAME} || true)
@@ -46,16 +39,10 @@ pipeline {
                             kill -9 \$PID
                         fi
 
-                        echo "🧹 Cleaning old JAR..."
-                        rm -f ${DEPLOY_DIR}/${JAR_NAME}
-
-                        echo "📦 Copying new JAR to deployment directory..."
-                        cp target/*.jar ${DEPLOY_DIR}/${JAR_NAME}
-
                         echo "▶️ Starting new app..."
                         nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
 
-                        echo "✅ App started successfully in background.."
+                        echo "✅ App started successfully in background."
                     """
                 }
             }
