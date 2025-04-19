@@ -6,11 +6,32 @@ pipeline {
         JAR_NAME = 'CharityConnect-0.0.1-SNAPSHOT.jar'
         LOG_FILE = "${DEPLOY_DIR}/app.log"
         DOWNLOAD_URL = 'https://github.com/tok2sumit/DevOps-Backend/releases/download/latest/CharityConnect-0.0.1-SNAPSHOT.jar'
-        // if using a private repo with GitHub Token
         GITHUB_TOKEN = credentials('GITHUB_TOKEN')
     }
 
     stages {
+        stage('Verify JAR Exists in GitHub Release') {
+            steps {
+                script {
+                    echo "🔍 Verifying if JAR exists at GitHub release URL..."
+                    def responseCode = sh(
+                        script: """
+                            curl -s -o /dev/null -w "%{http_code}" \
+                            -H "Authorization: token ${GITHUB_TOKEN}" \
+                            ${DOWNLOAD_URL}
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    if (responseCode != '200') {
+                        error "❌ JAR not found at ${DOWNLOAD_URL}. Release may have failed or is incomplete."
+                    } else {
+                        echo "✅ JAR found. Proceeding to download and deploy."
+                    }
+                }
+            }
+        }
+
         stage('Download JAR from GitHub Releases') {
             steps {
                 script {
