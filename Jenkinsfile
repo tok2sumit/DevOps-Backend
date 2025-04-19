@@ -21,9 +21,16 @@ pipeline {
 
         stage('Build App') {
             steps {
-                echo '🔨 Building Spring Boot application...'
-                sh 'mvn clean package -DskipTests --batch-mode'
-                echo '✅ Build complete.'
+                timeout(time: 15, unit: 'MINUTES') {
+                    echo '🔨 Building Spring Boot application...'
+                    sh '''
+                        while true; do echo "[INFO] Still building..."; sleep 60; done &
+                        MVN_PID=$!
+                        mvn -B -V -U clean package -DskipTests
+                        kill $MVN_PID
+                    '''
+                    echo '✅ Build complete.'
+                }
             }
         }
 
