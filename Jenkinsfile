@@ -11,19 +11,20 @@ pipeline {
     }
 
     stages {
-        stage('Download JAR from GitHub Release') {
+        stage('Download JAR from GitHub Releases') {
             steps {
-                echo '⬇️ Downloading JAR from GitHub Releases...'
+                script {
+                    echo "⬇️ Downloading JAR from GitHub Releases..."
+                    sh """
+                        echo "🧹 Cleaning old JAR..."
+                        rm -f ${DEPLOY_DIR}/${JAR_NAME}
 
-                sh """
-                    echo "🧹 Cleaning old JAR..."
-                    rm -f ${DEPLOY_DIR}/${JAR_NAME}
-
-                    echo "📥 Downloading new JAR from GitHub..."
-                    curl -L -o ${DEPLOY_DIR}/${JAR_NAME} "${DOWNLOAD_URL}"
-                    # If using a private repo, use:
-                    # curl -L -H "Authorization: token ${GITHUB_TOKEN}" -o ${DEPLOY_DIR}/${JAR_NAME} "${DOWNLOAD_URL}"
-                """
+                        echo "📦 Downloading new JAR..."
+                        curl -H "Authorization: token ${GITHUB_TOKEN}" \
+                        -L ${DOWNLOAD_URL} \
+                        -o ${DEPLOY_DIR}/${JAR_NAME}
+                    """
+                }
             }
         }
 
@@ -33,7 +34,7 @@ pipeline {
                     echo '🚀 Starting deployment...'
                     sh """
                         echo "🔎 Checking for running instance..."
-                        PID=\$(pgrep -f ${JAR_NAME} || true)
+                        PID=\$(pgrep -f ${DEPLOY_DIR}/${JAR_NAME} || true)
                         if [ ! -z "\$PID" ]; then
                             echo "🛑 Stopping existing app (PID: \$PID)"
                             kill -9 \$PID
