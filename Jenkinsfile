@@ -26,7 +26,7 @@ pipeline {
                     if (responseCode != '200') {
                         error "❌ JAR not found at ${DOWNLOAD_URL}. Release may have failed or is incomplete."
                     } else {
-                        echo "✅ JAR found. Proceeding to download and deploy."
+                        echo "✅ JAR found. Proceeding to download and deploy.."
                     }
                 }
             }
