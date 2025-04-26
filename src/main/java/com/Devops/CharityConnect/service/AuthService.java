@@ -60,7 +60,7 @@ public class AuthService {
 
             db.collection("users").document(userRecord.getUid()).set(userData);
 
-            response.put("message", "User registered successfully: " + userRecord.getUid());
+            response.put("message", "User registered successfully.: " + userRecord.getUid());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
