@@ -21,11 +21,17 @@ jobs:
       - name: 🏗️ Build with Maven
         run: mvn clean package -DskipTests
 
+      - name: 🏷️ Get Maven project version
+        id: get_version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: 🚀 Create GitHub Release and Upload JAR
         uses: softprops/action-gh-release@v1
         with:
-          name: CharityConnect Release
-          tag_name: latest
-          files: target/CharityConnect-0.0.1-SNAPSHOT.jar
+          name: CharityConnect Release ${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          files: target/CharityConnect-${{ env.VERSION }}.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
