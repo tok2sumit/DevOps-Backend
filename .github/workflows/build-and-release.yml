@@ -2,10 +2,10 @@ name: Build & Release Spring Boot App
 
 on:
   push:
-    branches: [ UAT ]  # 👈 Adjust to your actual branch
+    branches: [ UAT ]  # 👈 adjust to your actual branch
 
 jobs:
-  build:
+  build_and_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,33 +21,40 @@ jobs:
       - name: 🏗️ Build with Maven
         run: mvn clean package -DskipTests
 
-      - name: 🏷️ Get Maven project version
-        id: get_version
+      - name: 📦 Create .zip and .tar.gz archives
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          mkdir -p artifacts
+          cp target/*.jar artifacts/
+          cd artifacts
+          zip CharityConnect.zip *.jar
+          tar -czvf CharityConnect.tar.gz *.jar
+          cd ..
 
-      - name: 🔖 Fetch latest tag and increment version
+      - name: 🔖 Fetch latest tag and auto-increment
         id: create_new_tag
         run: |
-          # Fetch the latest tag from GitHub repository
-          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          git fetch --tags
+
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "")
           
-          # If there's no tag (first release), set the default version
           if [ -z "$LATEST_TAG" ]; then
+            echo "No existing tag found. Starting at v1.0.0"
             LATEST_TAG="v1.0.0"
           fi
 
-          # Extract the patch version and increment it (e.g., v1.0.1 → v1.0.2)
-          VERSION_PARTS=(${LATEST_TAG//./ })
-          PATCH_VERSION=${VERSION_PARTS[2]}
-          NEW_PATCH_VERSION=$((PATCH_VERSION + 1))
+          echo "Latest tag: $LATEST_TAG"
 
-          # Generate the new tag (you can adjust this for major/minor increment if needed)
-          NEW_TAG="v${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH_VERSION"
+          TAG_NO_V=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG_NO_V"
+
+          NEW_PATCH=$((PATCH + 1))
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "New tag: $NEW_TAG"
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
 
-          # Create and push the new tag
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git tag $NEW_TAG
           git push origin $NEW_TAG
 
@@ -57,8 +64,8 @@ jobs:
           name: CharityConnect Release ${{ env.NEW_TAG }}
           tag_name: ${{ env.NEW_TAG }}
           files: |
-            target/CharityConnect-${{ env.VERSION }}.jar
-            target/CharityConnect-${{ env.VERSION }}.zip
-            target/CharityConnect-${{ env.VERSION }}.tar.gz
+            target/*.jar
+            artifacts/CharityConnect.zip
+            artifacts/CharityConnect.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
