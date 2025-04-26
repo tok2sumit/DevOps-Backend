@@ -2,7 +2,7 @@ name: Build & Release Spring Boot App
 
 on:
   push:
-    branches: [ UAT ]  # 👈 adjust to your actual branch
+    branches: [ UAT ]  # 👈 Adjust to your actual branch
 
 jobs:
   build:
@@ -27,11 +27,38 @@ jobs:
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: 🚀 Create GitHub Release and Upload JAR
+      - name: 🔖 Fetch latest tag and increment version
+        id: create_new_tag
+        run: |
+          # Fetch the latest tag from GitHub repository
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          
+          # If there's no tag (first release), set the default version
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v1.0.0"
+          fi
+
+          # Extract the patch version and increment it (e.g., v1.0.1 → v1.0.2)
+          VERSION_PARTS=(${LATEST_TAG//./ })
+          PATCH_VERSION=${VERSION_PARTS[2]}
+          NEW_PATCH_VERSION=$((PATCH_VERSION + 1))
+
+          # Generate the new tag (you can adjust this for major/minor increment if needed)
+          NEW_TAG="v${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH_VERSION"
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+
+          # Create and push the new tag
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+
+      - name: 🚀 Create GitHub Release and Upload Artifacts
         uses: softprops/action-gh-release@v1
         with:
-          name: CharityConnect Release ${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          files: target/CharityConnect-${{ env.VERSION }}.jar
+          name: CharityConnect Release ${{ env.NEW_TAG }}
+          tag_name: ${{ env.NEW_TAG }}
+          files: |
+            target/CharityConnect-${{ env.VERSION }}.jar
+            target/CharityConnect-${{ env.VERSION }}.zip
+            target/CharityConnect-${{ env.VERSION }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
