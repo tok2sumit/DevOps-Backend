@@ -3,17 +3,20 @@ pipeline {
 
     environment {
         DEPLOY_DIR = '/home/ubuntu/CharityConnectBackend'
-        JAR_NAME = 'CharityConnect-0.0.1-SNAPSHOT.jar'
+        JAR_NAME = "CharityConnect-0.0.1-SNAPSHOT.jar"  // will stay same if release always produces this name
         LOG_FILE = "${DEPLOY_DIR}/app.log"
-        DOWNLOAD_URL = 'https://github.com/tok2sumit/DevOps-Backend/releases/download/latest/CharityConnect-0.0.1-SNAPSHOT.jar'
+        GITHUB_REPO = 'tok2sumit/DevOps-Backend'
         GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+        // 👇 Use the dynamic tag coming from webhook
+        GITHUB_RELEASE_TAG = "${GITHUB_RELEASE_TAG}"
+        DOWNLOAD_URL = "https://github.com/${GITHUB_REPO}/releases/download/${GITHUB_RELEASE_TAG}/${JAR_NAME}"
     }
 
     stages {
         stage('Verify JAR Exists in GitHub Release') {
             steps {
                 script {
-                    echo "🔍 Verifying if JAR exists at GitHub release URL..."
+                    echo "🔍 Verifying if JAR exists at GitHub release URL: ${DOWNLOAD_URL} ..."
                     def responseCode = sh(
                         script: """
                             curl -s -o /dev/null -w "%{http_code}" \
@@ -26,7 +29,7 @@ pipeline {
                     if (responseCode != '200') {
                         error "❌ JAR not found at ${DOWNLOAD_URL}. Release may have failed or is incomplete."
                     } else {
-                        echo "✅ JAR found. Proceeding to download and deploy.."
+                        echo "✅ JAR found. Proceeding to download and deploy..."
                     }
                 }
             }
