@@ -61,7 +61,6 @@ pipeline {
                             echo "🛑 Stopping existing app (PID: \$PID)"
                             kill -9 \$PID
                         fi
-
                         echo "▶️ Starting new app..."
                         nohup java -jar ${DEPLOY_DIR}/${JAR_NAME} > ${LOG_FILE} 2>&1 &
 
@@ -77,7 +76,7 @@ pipeline {
             echo '✅ Deployment completed successfully.'
         }
         failure {
-            echo '❌ Deployment failed.'
+            echo '❌ Deployment failed..'
         }
     }
 }
