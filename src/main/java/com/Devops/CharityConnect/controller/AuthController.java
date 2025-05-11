@@ -23,7 +23,6 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody Map<String, String> request) {
         System.out.println("Inside AuthController register method");
-
         ResponseEntity<Map<String, String>> result = authService.registerUser(request);
 
         // Return the response as-is (success or failure)
