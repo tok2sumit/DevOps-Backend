@@ -25,7 +25,6 @@ pipeline {
                         """,
                         returnStdout: true
                     ).trim()
-
                     if (responseCode != '200') {
                         error "❌ JAR not found at ${DOWNLOAD_URL}. Release may have failed or is incomplete."
                     } else {
