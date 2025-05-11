@@ -42,7 +42,6 @@ pipeline {
                     sh """
                         echo "🧹 Cleaning old JAR..."
                         rm -f ${DEPLOY_DIR}/${JAR_NAME}
-
                         echo "📦 Downloading new JAR..."
                         curl -H "Authorization: token ${GITHUB_TOKEN}" \
                         -L ${DOWNLOAD_URL} \
